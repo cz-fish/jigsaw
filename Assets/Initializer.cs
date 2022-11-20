@@ -9,7 +9,7 @@ public class Initializer : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        var texture = Resources.Load<Texture2D>("tex");
+        var texture = Resources.Load<Texture2D>("2");
         var material = new Material(Shader.Find("Standard"));
         material.color = Color.white;
         material.SetTexture("_MainTex", texture);
