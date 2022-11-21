@@ -22,12 +22,10 @@ public class Initializer : MonoBehaviour
         PuzzleCutter cutter = new PuzzleCutter();
         var pieces = cutter.cutPieces(texture.width, texture.height, 5, 5, 13);
         int counter = 0;
-        print($"Pieces: {pieces.Count}");
         foreach (var piece in pieces) {
             // Make each piece
             var mesh = new Mesh();
             int pieceSize = piece.points.Length;
-            print($"Piece size: {pieceSize}");
             Vector3[] vertices = new Vector3[pieceSize];
             Vector3[] normals = new Vector3[pieceSize];
             Vector2[] uv = new Vector2[pieceSize];
@@ -46,35 +44,28 @@ public class Initializer : MonoBehaviour
                 normals[i] = -Vector3.forward;
             }
 
-            // FIXME: when the PuzzleCutter returns correct triangulation,
-            //        use the mesh renderer instead of the line renderer
-            
-            /*
             mesh.vertices = vertices;
             mesh.normals = normals;
             mesh.uv = uv;
             mesh.triangles = piece.triangles;
-            */
 
             var pieceObj = new GameObject();
             pieceObj.name = $"piece{counter}";
             ++counter;
 
-            print($"Vertices size: {vertices.Length}");
-
+            // Line renderer for the outline only
             LineRenderer lineRenderer = pieceObj.AddComponent<LineRenderer>();
             lineRenderer.loop = true;
             lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-            lineRenderer.widthMultiplier = 0.05f;
+            lineRenderer.widthMultiplier = 0.02f;
             lineRenderer.positionCount = vertices.Length;
             lineRenderer.SetPositions(vertices);
 
-            /*
+            // Mesh renderer for the texture
             MeshRenderer meshRenderer = pieceObj.AddComponent<MeshRenderer>();
             meshRenderer.material = material;
             MeshFilter meshFilter = pieceObj.AddComponent<MeshFilter>();
             meshFilter.mesh = mesh;
-            */
         }
     }
 

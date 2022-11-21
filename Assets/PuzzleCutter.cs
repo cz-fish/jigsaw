@@ -129,7 +129,7 @@ public class PuzzleCutter
             EdgeType.In
         });
 
-        piece2.Transform(horScale, verScale, 5*horScale, 1*verScale);
+        piece2.Transform(horScale, verScale, 4*horScale, 1*verScale);
         list.Add(piece2);
 
         Piece piece3 = makeUnitPiece(new EdgeType[4] {
@@ -192,11 +192,11 @@ public class PuzzleCutter
             // else - flat edge - no extra points
         }
         
-        // TODO: vertices are fine, but we have to triangulate!
+        var triangulator = new Triangulator(points);
 
         return new Piece() {
             points = points.ToArray(),
-            triangles = new int[0]
+            triangles = triangulator.Triangulate()
         };
     }
 
