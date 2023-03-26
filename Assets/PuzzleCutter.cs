@@ -5,6 +5,8 @@ using UnityEngine;
 public class Piece {
     public Vector3[] points;
     public int[] triangles;
+    public int row;
+    public int column;
 
     public void Transform(float scaleX, float scaleY, float translateX, float translateY)
     {
@@ -44,12 +46,19 @@ public class PuzzleCutter
             new List<Vector2>(),
         };
 
+        // Radius of the circular bump
         double radius = 1/6.0;
-        double centerInset = 1/8.0; // must be smaller than radius
+        // Offset of the center of the bump from the piece edge. Must be smaller than radius
+        double centerInset = 1/9.0;
+        // Number of points on the bump
         int numStops = 12;
-        double dy = Math.Sqrt(radius * radius - centerInset * centerInset);
 
+        // Calculate the angle of the first point of the bump - this point is on the edge of the unit square
+        double dy = Math.Sqrt(radius * radius - centerInset * centerInset);
         double startAng = Math.Atan2(dy, centerInset);
+        // By adjusting the angle slightly, we curve the piece a little, so that the edges are not straight
+        startAng -= 0.25;
+        // Remaining angle to be divided into numStops equal stops
         double remAng = 2 * (Math.PI - startAng);
         double stopAng = remAng / numStops;
 
@@ -84,63 +93,55 @@ public class PuzzleCutter
     public List<Piece> cutPieces(int width, int height, int rows, int columns, int randomSeed)
     {
         var list = new List<Piece>();
-        /*
-        var points = new Vector3[7];
-        points[0] = new Vector3(0, 0, 0);
-        points[1] = new Vector3(0.5f, 0, 0);
-        points[2] = new Vector3(0.5f, 0.5f, 0);
-        points[3] = new Vector3(0, 0.5f, 0);
-        points[4] = new Vector3(0, 0.3f, 0);
-        points[5] = new Vector3(0.1f, 0.25f, 0);
-        points[6] = new Vector3(0, 0.2f, 0);
-        var triangles = new int[5*3]
-        {
-            6, 5, 0,
-            0, 5, 1,
-            1, 5, 2,
-            2, 5, 3,
-            3, 5, 4,
-        };
-        list.Add(new Piece{points = points, triangles = triangles});
-        */
+
+        var horizontalBumps = new List<List<bool>>();
+        var verticalBumps = new List<List<bool>>();
+        var rand = new System.Random(randomSeed);
 
         float horScale = 1.0f/columns;
         float verScale = 1.0f/rows;
 
-        // TODO: split the whole picture into pieces
-        //       edge pieces have to have flat edges
-        //       inner edges should be randomly either In or Out
-        //       and adjacent pieces must match
+        // randomly choose horizontal bumps of all pieces
+        for (var row = 0; row < rows; ++row) {
+            horizontalBumps.Add(new List<bool>());
+            for (var column = 0; column < columns - 1; ++column) {
+                horizontalBumps[row].Add(rand.Next() > int.MaxValue / 2);
+            }
+        }
 
-        Piece piece = makeUnitPiece(new EdgeType[4] {
-            EdgeType.Out,
-            EdgeType.Out,
-            EdgeType.Out,
-            EdgeType.Out
-        });
+        // randomly choose vertical bumps of all pieces
+        for (var column = 0; column < columns; ++column) {
+            verticalBumps.Add(new List<bool>());
+            for (var row = 0; row < rows - 1; ++row) {
+                verticalBumps[column].Add(rand.Next() > int.MaxValue / 2);
+            }
+        }
 
-        piece.Transform(horScale, verScale, 2*horScale, 3*verScale);
-        list.Add(piece);
+        // create all the pieces
+        for (var row = 0; row < rows; ++row) {
+            for (var column = 0; column < columns; ++column) {
+                // edges are in EdgeOrder: left bottom right top
+                var edges = new EdgeType[4] { EdgeType.Flat, EdgeType.Flat, EdgeType.Flat, EdgeType.Flat };
+                if (column > 0) {
+                    edges[0] = horizontalBumps[row][column-1] ? EdgeType.In : EdgeType.Out;
+                }
+                if (column < columns - 1) {
+                    edges[2] = horizontalBumps[row][column] ? EdgeType.Out : EdgeType.In;
+                }
+                if (row > 0) {
+                    edges[1] = verticalBumps[column][row-1] ? EdgeType.In : EdgeType.Out;
+                }
+                if (row < rows - 1) {
+                    edges[3] = verticalBumps[column][row] ? EdgeType.Out : EdgeType.In;
+                }
 
-        Piece piece2 = makeUnitPiece(new EdgeType[4] {
-            EdgeType.In,
-            EdgeType.In,
-            EdgeType.In,
-            EdgeType.In
-        });
-
-        piece2.Transform(horScale, verScale, 4*horScale, 1*verScale);
-        list.Add(piece2);
-
-        Piece piece3 = makeUnitPiece(new EdgeType[4] {
-            EdgeType.Flat,
-            EdgeType.Out,
-            EdgeType.In,
-            EdgeType.Out
-        });
-
-        piece3.Transform(horScale, verScale, 1*horScale, 3*verScale);
-        list.Add(piece3);
+                var piece = makeUnitPiece(edges);
+                piece.row = row;
+                piece.column = column;
+                piece.Transform(horScale, verScale, column * horScale, row * verScale);
+                list.Add(piece);
+            }
+        }
 
         return list;
     }

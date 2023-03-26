@@ -299,7 +299,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!1 &1954544323
 GameObject:
@@ -312,7 +312,7 @@ GameObject:
   - component: {fileID: 1954544325}
   - component: {fileID: 1954544324}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: JigsawCutter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -330,6 +330,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd09e967febf5714e9fda70502cb78f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  numHorizontalPieces: 5
+  numVerticalPieces: 5
+  snapTolerance: 0.3
+  canvasWidth: 6
+  canvasHeight: 6
+  originX: -3
+  originY: -3
 --- !u!4 &1954544325
 Transform:
   m_ObjectHideFlags: 0
@@ -337,11 +344,11 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1954544323}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -75.5, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
