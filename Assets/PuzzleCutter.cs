@@ -7,17 +7,6 @@ public class Piece {
     public int[] triangles;
     public int row;
     public int column;
-
-    public void Transform(float scaleX, float scaleY, float translateX, float translateY)
-    {
-        for (int i = 0; i < points.Length; ++i) {
-            points[i] = new Vector3(
-                points[i].x * scaleX + translateX,
-                points[i].y * scaleY + translateY,
-                0
-            );
-        }
-    }
 }
 
 public class PuzzleCutter 
@@ -98,9 +87,6 @@ public class PuzzleCutter
         var verticalBumps = new List<List<bool>>();
         var rand = new System.Random(randomSeed);
 
-        float horScale = 1.0f/columns;
-        float verScale = 1.0f/rows;
-
         // randomly choose horizontal bumps of all pieces
         for (var row = 0; row < rows; ++row) {
             horizontalBumps.Add(new List<bool>());
@@ -138,7 +124,6 @@ public class PuzzleCutter
                 var piece = makeUnitPiece(edges);
                 piece.row = row;
                 piece.column = column;
-                piece.Transform(horScale, verScale, column * horScale, row * verScale);
                 list.Add(piece);
             }
         }

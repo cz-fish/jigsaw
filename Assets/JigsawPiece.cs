@@ -9,13 +9,14 @@ public class JigsawPiece : MonoBehaviour
     private Vector3 m_pointerOffset;
     private Camera m_camera;
 
-    private const float c_zPlaced = 0f;
-    private const float c_zScattered = -0.125f;
-    private const float c_zDragging = -0.25f;
+    private const float c_zPlaced = 0.125f;
+    private const float c_zScattered = 0f;
+    private const float c_zDragging = -0.125f;
 
     [SerializeField] public int row;
     [SerializeField] public int column;
     [SerializeField] public Vector3 targetPosition;
+    [SerializeField] public GameObject dropSlot;
 
     public JigsawGame m_game;
 
@@ -42,11 +43,13 @@ public class JigsawPiece : MonoBehaviour
 
         var (position, isPlaced) = m_game.DropPiece(this);
         if (isPlaced) {
-            Debug.Log("Piece snapped to position");
+            // Piece is snapped in its position
             position.z = c_zPlaced;
             m_placed = true;
+            // Disable the dropSlot
+            dropSlot.SetActive(false);
         } else {
-            Debug.Log("Piece NOT snapped to position");
+            // Not in correct position, back to scattered state
             position.z = c_zScattered;
         }
         transform.position = position;

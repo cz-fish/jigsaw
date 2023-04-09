@@ -330,13 +330,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd09e967febf5714e9fda70502cb78f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numHorizontalPieces: 5
-  numVerticalPieces: 5
+  numHorizontalPieces: 4
+  numVerticalPieces: 4
   snapTolerance: 0.3
   canvasWidth: 6
   canvasHeight: 6
   originX: -3
   originY: -3
+  showWireframeOutline: 1
+  randomSeed: 13
 --- !u!4 &1954544325
 Transform:
   m_ObjectHideFlags: 0
