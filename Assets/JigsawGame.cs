@@ -4,43 +4,55 @@ using UnityEngine;
 
 public class JigsawGame : MonoBehaviour
 {
-    //public var material: Material;
     [SerializeField] private int numHorizontalPieces = 5;
     [SerializeField] private int numVerticalPieces = 5;
     [SerializeField] private float snapTolerance = 0.3f;
-
-    [SerializeField] private float canvasWidth = 6f;
-    [SerializeField] private float canvasHeight = 6f;
-    [SerializeField] private float originX = -3f;
-    [SerializeField] private float originY = -3f;
+    [SerializeField] private float longerSideUnits = 6f;
+    [SerializeField] private float borderThicknessPct = 0.05f;
 
     [SerializeField] private bool showWireframeOutline = true;
+    [SerializeField] private bool showBorder = true;
 
     [SerializeField] private int randomSeed = 13;
 
     private List<GameObject> m_pieces;
     private List<GameObject> m_dropPositions;
+    private GameObject m_border;
 
     // Start is called before the first frame update
     void Start()
     {
-        // Make material with texture
-        var texture = Resources.Load<Texture2D>("2");
-        var material = new Material(Shader.Find("Standard"));
-        material.color = Color.white;
-        material.SetTexture("_MainTex", texture);
+        // -- picture --
+        (var material, var textureWidth, var textureHeight) = MakeMaterial();
+        var dropSlotMaterial = new Material(Shader.Find("Sprites/Default"));
 
-        PuzzleCutter cutter = new PuzzleCutter();
-        var pieces = cutter.cutPieces(texture.width, texture.height, numVerticalPieces, numHorizontalPieces, randomSeed);
-        int counter = 0;
-        m_pieces = new List<GameObject>();
-        m_dropPositions = new List<GameObject>();
+        // -- sizes --
+        // Derive board size so that the longer side is `longerSideUnits` units
+        float canvasWidth = 1f;
+        float canvasHeight = 1f;
+        if (textureWidth > textureHeight) {
+            canvasWidth = longerSideUnits;
+            canvasHeight = longerSideUnits * textureHeight / textureWidth;
+        } else {
+            canvasHeight = longerSideUnits;
+            canvasWidth = longerSideUnits * textureWidth / textureHeight;
+        }
+        float originX = - canvasWidth / 2f;
+        float originY = - canvasHeight / 2f;
 
-        float tileWidth = 1.0f / numHorizontalPieces;
-        float tileHeight = 1.0f / numVerticalPieces;
+        float effectiveBorder = showBorder ? borderThicknessPct : 0f;
+        float tileWidth = (1.0f - 2 * effectiveBorder) / numHorizontalPieces;
+        float tileHeight = (1.0f - 2 * effectiveBorder) / numVerticalPieces;
 
         float horScale = tileWidth * canvasWidth;
         float verScale = tileHeight * canvasHeight;
+
+        // -- make objects --
+        PuzzleCutter cutter = new PuzzleCutter();
+        var pieces = cutter.cutPieces(numVerticalPieces, numHorizontalPieces, randomSeed);
+        int counter = 0;
+        m_pieces = new List<GameObject>();
+        m_dropPositions = new List<GameObject>();
 
         foreach (var piece in pieces) {
             // Make each piece
@@ -53,21 +65,24 @@ public class JigsawGame : MonoBehaviour
 
             for (int i = 0; i < pieceSize; ++i) {
                 // Keep unit coordinates; will be scaled and translated by the transform.
+                //   coordinates from 0 to 1
                 vertices[i] = new Vector3(
                     piece.points[i][0],
                     piece.points[i][1],
                     0
                 );
                 // The line renderer doesn't apply tranformations, so we'll have to scale and translate positions ourselves
+                //   coordinates from -canvasWidth, -canvasHeight to canvasWidth, canvasHeight (minus border)
                 dropSlotVertices[i] = new Vector3(
-                    (piece.points[i][0] + piece.column) * tileWidth * canvasWidth + originX,
-                    (piece.points[i][1] + piece.row) * tileHeight * canvasHeight + originY,
+                    (effectiveBorder + (piece.points[i][0] + piece.column) * tileWidth) * canvasWidth + originX,
+                    (effectiveBorder + (piece.points[i][1] + piece.row) * tileHeight) * canvasHeight + originY,
                     0
                 );
-                // Texture coordinates must be scaled
+                // Texture coordinates
+                //   coordinates from 0 to 1
                 uv[i] = new Vector2(
-                    piece.points[i][0] * tileWidth + piece.column * tileWidth,
-                    piece.points[i][1] * tileHeight + piece.row * tileHeight
+                    effectiveBorder + piece.points[i][0] * tileWidth + piece.column * tileWidth,
+                    effectiveBorder + piece.points[i][1] * tileHeight + piece.row * tileHeight
                 );
                 normals[i] = -Vector3.forward;
             }
@@ -81,9 +96,14 @@ public class JigsawGame : MonoBehaviour
             pieceObj.name = $"piece{counter}";
             m_pieces.Add(pieceObj);
 
-            // Apply scale and put into position.
+            // Apply scale
             pieceObj.transform.localScale = new Vector3(horScale, verScale, 1.0f);
-            pieceObj.transform.position = new Vector3(originX + horScale * piece.column, originY + verScale * piece.row, 0f);
+            // put into position
+            pieceObj.transform.position = new Vector3(
+                originX + canvasWidth * effectiveBorder + horScale * piece.column,
+                originY + canvasHeight * effectiveBorder + verScale * piece.row,
+                0f
+            );
 
             // Mesh renderer for the texture
             MeshRenderer meshRenderer = pieceObj.AddComponent<MeshRenderer>();
@@ -101,28 +121,107 @@ public class JigsawGame : MonoBehaviour
             jigsawPiece.m_game = this;
 
             // Drop slot
-            var dropSlot = new GameObject();
-            dropSlot.name = $"dropSlot{counter}";
-            m_dropPositions.Add(dropSlot);
-
-            // Line renderer for the outline only
-            LineRenderer lineRenderer = dropSlot.AddComponent<LineRenderer>();
-            lineRenderer.loop = true;
-            lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-            lineRenderer.widthMultiplier = 0.02f;
-            lineRenderer.positionCount = dropSlotVertices.Length;
-            lineRenderer.SetPositions(dropSlotVertices);
-
+            var dropSlot = MakeDropSlot(counter, dropSlotVertices, dropSlotMaterial);
             dropSlot.SetActive(showWireframeOutline);
             jigsawPiece.dropSlot = dropSlot;
 
             ++counter;
         }
 
-        ScatterPieces(tileWidth, tileHeight);
+        if (showBorder) {
+            MakeBorder(effectiveBorder, material, canvasWidth, canvasHeight);
+        }
+
+        ScatterPieces(tileWidth, tileHeight, canvasWidth, canvasHeight);
     }
 
-    private void ScatterPieces(float tileWidth, float tileHeight) {
+    private (Material, int, int) MakeMaterial() {
+        // Make material with texture
+        var texture = Resources.Load<Texture2D>("2");
+        var material = new Material(Shader.Find("Standard"));
+        material.color = Color.white;
+        material.SetTexture("_MainTex", texture);
+        return (material, texture.width, texture.height);
+    }
+
+    private GameObject MakeDropSlot(int counter, Vector3[] dropSlotVertices, Material dropSlotMaterial) {
+        var dropSlot = new GameObject();
+        dropSlot.name = $"dropSlot{counter}";
+        m_dropPositions.Add(dropSlot);
+
+        // Line renderer for the outline only
+        LineRenderer lineRenderer = dropSlot.AddComponent<LineRenderer>();
+        lineRenderer.loop = true;
+        lineRenderer.material = dropSlotMaterial;
+        lineRenderer.widthMultiplier = 0.02f;
+        lineRenderer.positionCount = dropSlotVertices.Length;
+        lineRenderer.SetPositions(dropSlotVertices);
+
+        return dropSlot;
+    }
+
+    private void MakeBorder(float thickness, Material material, float canvasWidth, float canvasHeight) {
+        m_border = new GameObject();
+        m_border.name = "border";
+
+        /*
+        0 --- 1 -------- 2 --- 3
+        | \   |   \      | \   |
+        |   \ |       \  |   \ |
+        4 --- 5 -------- 6 --- 7
+        |\    |          |\    |
+        | \   |          | \   |
+        |  \  |          |  \  |
+        |   \ |          |   \ |
+        8 --- 9 --------10 ---11
+        | \   |   \      | \   |
+        |   \ |       \  |   \ |
+       12 ---13 --------14 ---15
+        */
+
+        // Vertices should be in clockwise order for triangles to be front facing
+        int[] triangles = {
+            0, 1, 5,    0, 5, 4,
+            1, 2, 6,    1, 6, 5,
+            2, 3, 7,    2, 7, 6,
+            4, 5, 9,    4, 9, 8,
+            6, 7, 11,   6, 11, 10,
+            8, 9, 13,   8, 13, 12,
+            9, 10, 14,  9, 14, 13,
+            10, 11, 15, 10, 15, 14,
+        };
+
+        const int borderPoints = 16;
+        Vector3[] vertices = new Vector3[borderPoints];
+        Vector3[] normals = new Vector3[borderPoints];
+        Vector2[] uv = new Vector2[borderPoints];
+        float[] stops = { 0f, thickness, 1f - thickness, 1f };
+        for (var row = 0; row < 4; ++row) {
+            float texCoordY = 1f - stops[row];
+            float screenCoordY = (texCoordY - 0.5f) * canvasHeight;
+            for (var col = 0; col < 4; ++col) {
+                float texCoordX = stops[col];
+                float screenCoordX = (texCoordX - 0.5f) * canvasWidth;
+                int arrayIndex = row * 4 + col;
+                vertices[arrayIndex] = new Vector3(screenCoordX, screenCoordY, 0.125f);
+                normals[arrayIndex] = -Vector3.forward;
+                uv[arrayIndex] = new Vector2(texCoordX, texCoordY);
+            }
+        }
+
+        var mesh = new Mesh();
+        mesh.vertices = vertices;
+        mesh.normals = normals;
+        mesh.uv = uv;
+        mesh.triangles = triangles;
+
+        var renderer = m_border.AddComponent<MeshRenderer>();
+        renderer.material = material;
+        var filter = m_border.AddComponent<MeshFilter>();
+        filter.mesh = mesh;
+    }
+
+    private void ScatterPieces(float tileWidth, float tileHeight, float canvasWidth, float canvasHeight) {
         var bounds = OrthographicBounds(Camera.main);
         var horExtra = bounds.extents.x - canvasWidth / 2;
         var verExtra = bounds.extents.y - canvasHeight / 2;

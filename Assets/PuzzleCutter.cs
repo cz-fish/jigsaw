@@ -79,7 +79,7 @@ public class PuzzleCutter
         }
     }
 
-    public List<Piece> cutPieces(int width, int height, int rows, int columns, int randomSeed)
+    public List<Piece> cutPieces(int rows, int columns, int randomSeed)
     {
         var list = new List<Piece>();
 
