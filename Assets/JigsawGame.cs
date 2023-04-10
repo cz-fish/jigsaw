@@ -22,6 +22,9 @@ public class JigsawGame : MonoBehaviour
     private GameObject m_border;
 
     private int m_correctPieces = 0;
+    private GameObject m_timerText;
+    private System.DateTime m_startTime;
+    private System.TimeSpan? m_solveTime = null;
 
     // Start is called before the first frame update
     void Start()
@@ -137,6 +140,7 @@ public class JigsawGame : MonoBehaviour
         }
 
         ScatterPieces(tileWidth, tileHeight, canvasWidth, canvasHeight);
+        SetupTimer();
     }
 
     private (Material, int, int) MakeMaterial() {
@@ -312,6 +316,29 @@ public class JigsawGame : MonoBehaviour
         }
     }
 
+    private void SetupTimer()
+    {
+        m_timerText = GameObject.Find("Timer");
+        m_startTime = System.DateTime.Now;
+    }
+
+    public void Update()
+    {
+        if (m_solveTime != null) {
+            return;
+        }
+        var text = m_timerText.GetComponent<TMPro.TMP_Text>();
+        var now = System.DateTime.Now;
+        if (text) {
+            var timeDiff = now - m_startTime;
+            if (timeDiff.TotalSeconds >= 60) {
+                text.text = $"Time: {(int)timeDiff.TotalSeconds / 60}m {(int)timeDiff.TotalSeconds % 60}s";
+            } else {
+                text.text = $"Time: {(int)timeDiff.TotalSeconds % 60}s";
+            }
+        }
+    }
+
     public static Bounds OrthographicBounds(Camera camera)
     {
         float screenAspect = (float)Screen.width / (float)Screen.height;
@@ -340,10 +367,11 @@ public class JigsawGame : MonoBehaviour
             return;
         }
         // Win
-        Debug.Log("Win!");
+        Debug.Log("Completed!");
         var win = GameObject.Find("Win");
         if (win) {
             win.WithChild("Stars").SetActive(true);
         }
+        m_solveTime = System.DateTime.Now - m_startTime;
     }
 }
