@@ -48,6 +48,7 @@ public class JigsawPiece : MonoBehaviour
             m_placed = true;
             // Disable the dropSlot
             dropSlot.SetActive(false);
+            m_game.CheckWin();
         } else {
             // Not in correct position, back to scattered state
             position.z = c_zScattered;

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using Assets;
+
 public class JigsawGame : MonoBehaviour
 {
     [SerializeField] private int numHorizontalPieces = 5;
@@ -18,6 +20,8 @@ public class JigsawGame : MonoBehaviour
     private List<GameObject> m_pieces;
     private List<GameObject> m_dropPositions;
     private GameObject m_border;
+
+    private int m_correctPieces = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -246,43 +250,47 @@ public class JigsawGame : MonoBehaviour
         } else {
             // space on all 4 sides, or on neither side
             left = pieceCount / 4;
-            right = pieceCount / 4;
-            above = pieceCount / 4;
+            right = (pieceCount - left) / 3;
+            above = (pieceCount - left - right) / 2;
             below = pieceCount - left - right - above;
         }
 
         //Debug.Log($"left {left}, right {right}, above {above}, below {below}");
+        float leftSpacing = (left > 1) ? canvasHeight / (left - 1) : 0;
+        float rightSpacing = (right > 1) ? canvasHeight / (right - 1) : 0;
+        float aboveSpacing = (above > 1) ? canvasWidth / (above - 1) : 0;
+        float belowSpacing = (below > 1) ? canvasWidth / (below - 1) : 0;
 
         for (var i = 0; i < left; ++i) {
             float jitter1 = Random.Range(-0.3f, 0.3f);
             float jitter2 = Random.Range(-0.3f, 0.3f);
             positions.Add(new Vector2(
-                - canvasWidth / 2f - horExtra  / 2f + jitter1,
-                - canvasHeight / 2f + (float)i / (left - 1) * canvasHeight + jitter2));
+                - canvasWidth / 2f - horExtra / 2f + jitter1,
+                (i - left/2) * leftSpacing + jitter2));
         }
 
         for (var i = 0; i < right; ++i) {
             float jitter1 = Random.Range(-0.3f, 0.3f);
             float jitter2 = Random.Range(-0.3f, 0.3f);
             positions.Add(new Vector2(
-                canvasWidth / 2f + horExtra  / 2f + jitter1,
-                - canvasHeight / 2f + (float)i / (right - 1) * canvasHeight + jitter2));
+                canvasWidth / 2f + horExtra / 2f + jitter1,
+                (i - right/2) * rightSpacing + jitter2));
         }
 
         for (var i = 0; i < above; ++i) {
             float jitter1 = Random.Range(-0.3f, 0.3f);
             float jitter2 = Random.Range(-0.3f, 0.3f);
             positions.Add(new Vector2(
-                - canvasWidth / 2f + (float)i / (above - 1) * canvasWidth + jitter1,
-                canvasHeight / 2f + verExtra  / 2f + jitter2));
+                (i - above/2) * aboveSpacing + jitter1,
+                canvasHeight / 2f + verExtra / 2f + jitter2));
         }
 
         for (var i = 0; i < below; ++i) {
             float jitter1 = Random.Range(-0.3f, 0.3f);
             float jitter2 = Random.Range(-0.3f, 0.3f);
             positions.Add(new Vector2(
-                - canvasWidth / 2f + (float)i / (below - 1) * canvasWidth + jitter1,
-                - canvasHeight / 2f - verExtra  / 2f + jitter2));
+                (i - below/2) * belowSpacing + jitter1,
+                - canvasHeight / 2f - verExtra / 2f + jitter2));
         }
 
         // Randomly shuffle the positions
@@ -319,9 +327,23 @@ public class JigsawGame : MonoBehaviour
         var distance = (piece.transform.position - piece.targetPosition).magnitude;
         if (distance < snapTolerance) {
             // TODO: apply to all other pieces in group, if dragging a group
+            m_correctPieces++;
             return (piece.targetPosition, true);
         } else {
             return (piece.transform.position, false);
+        }
+    }
+
+    public void CheckWin()
+    {
+        if (m_correctPieces != m_pieces.Count) {
+            return;
+        }
+        // Win
+        Debug.Log("Win!");
+        var win = GameObject.Find("Win");
+        if (win) {
+            win.WithChild("Stars").SetActive(true);
         }
     }
 }
